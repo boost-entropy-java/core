@@ -11,15 +11,12 @@ jobs:
     name: Unit Tests
     runs-on: ubuntu-18.04
     env:
-      DOT_CICD_BRANCH: 19756-java-11
-      DOT_CICD_CLOUD_PROVIDER: github
-      DOT_CICD_TARGET: core
+      DOT_CICD_BRANCH: 20088-automated-vulnerability-scan
       EXPORT_REPORTS: true
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       GITHUB_USER: dotcmsbuild
       GITHUB_USER_TOKEN: ${{ secrets.USER_TOKEN }}
       PULL_REQUEST: ${{ github.event.number }}
-      DEBUG: false
     steps:
       - name: GITHUB CONTEXT
         env:
@@ -52,37 +49,24 @@ jobs:
         run: |
           sh -c "$(curl -fsSL https://raw.githubusercontent.com/dotCMS/dot-cicd/${DOT_CICD_BRANCH}/seed/install-dot-cicd.sh)"
         if: env.jobRun == 'true'
-      - name: Check Provider
-        run: |
-          dotcicd/library/checkProvider.sh github
-        if: env.jobRun == 'true'
-      - name: Fail provider
-        run: |
-          echo "jobRun=false" >> $GITHUB_ENV
-        if: env.jobRun == 'true' && failure()
-      - name: Build Tests Base Image
-        run: |
-          dotcicd/library/pipeline.sh buildTestsBase
-        env:
-          LICENSE_KEY: ${{ secrets.DOTCMS_LICENSE }}
-        if: env.jobRun == 'true'
       - name: Run Unit Tests
         run: |
-          dotcicd/library/pipeline.sh runUnit
+          ../dotcicd/library/pipeline.sh runUnit
+        env:
+          LICENSE_KEY: ${{ secrets.DOTCMS_LICENSE }}
         if: env.jobRun == 'true'
   run-curl-tests-job:
     name: Curl Tests
     runs-on: ubuntu-18.04
     env:
-      DOT_CICD_BRANCH: 19756-java-11
-      DOT_CICD_CLOUD_PROVIDER: github
-      DOT_CICD_TARGET: core
+      DOT_CICD_BRANCH: 20088-automated-vulnerability-scan
+      DOCKER_BRANCH: 19756-docker-java-11
       EXPORT_REPORTS: true
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       GITHUB_USER: dotcmsbuild
       GITHUB_USER_TOKEN: ${{ secrets.USER_TOKEN }}
       PULL_REQUEST: ${{ github.event.number }}
-      DEBUG: false
+      DEBUG: true
     steps:
       - name: GITHUB CONTEXT
         env:
@@ -127,23 +111,9 @@ jobs:
         run: |
           sh -c "$(curl -fsSL https://raw.githubusercontent.com/dotCMS/dot-cicd/${DOT_CICD_BRANCH}/seed/install-dot-cicd.sh)"
         if: env.jobRun == 'true'
-      - name: Check Provider
-        run: |
-          dotcicd/library/checkProvider.sh github
-        if: env.jobRun == 'true'
-      - name: Fail provider
-        run: |
-          echo "jobRun=false" >> $GITHUB_ENV
-        if: env.jobRun == 'true' && failure()
-      - name: Build DotCMS Image
-        run: |
-          dotcicd/library/pipeline.sh buildBase
-        env:
-          LICENSE_KEY: ${{ secrets.DOTCMS_LICENSE }}
-        if: env.jobRun == 'true'
       - name: Run Curl Tests - postgres
         run: |
-          dotcicd/library/pipeline.sh runCurl
+          ../dotcicd/library/pipeline.sh runCurl
         env:
           LICENSE_KEY: ${{ secrets.DOTCMS_LICENSE }}
           databaseType: postgres
@@ -159,15 +129,12 @@ jobs:
       matrix:
         databaseType: [ postgres, mysql, oracle, mssql ]
     env:
-      DOT_CICD_BRANCH: 19756-java-11
-      DOT_CICD_CLOUD_PROVIDER: github
-      DOT_CICD_TARGET: core
+      DOT_CICD_BRANCH: 20088-automated-vulnerability-scan
       EXPORT_REPORTS: true
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       GITHUB_USER: dotcmsbuild
       GITHUB_USER_TOKEN: ${{ secrets.USER_TOKEN }}
       PULL_REQUEST: ${{ github.event.number }}
-      DEBUG: false
     steps:
       - name: GITHUB CONTEXT
         env:
@@ -249,25 +216,12 @@ jobs:
         run: |
           sh -c "$(curl -fsSL https://raw.githubusercontent.com/dotCMS/dot-cicd/${DOT_CICD_BRANCH}/seed/install-dot-cicd.sh)"
         if: env.jobRun == 'true'
-      - name: Check Provider
-        run: |
-          dotcicd/library/checkProvider.sh github
-        if: env.jobRun == 'true'
-      - name: Fail provider
-        run: |
-          echo "jobRun=false" >> $GITHUB_ENV
-        if: env.jobRun == 'true' && failure()
-      - name: Build Tests Base Image
-        run: |
-          dotcicd/library/pipeline.sh buildTestsBase
-        env:
-          LICENSE_KEY: ${{ secrets.DOTCMS_LICENSE }}
-        if: env.jobRun == 'true'
       - name: Run Integration Tests - ${{ matrix.databaseType }}
         run: |
-          dotcicd/library/pipeline.sh runIntegration
+          ../dotcicd/library/pipeline.sh runIntegration
         env:
           databaseType: ${{ matrix.databaseType }}
+          LICENSE_KEY: ${{ secrets.DOTCMS_LICENSE }}
         if: success() && env.jobRun == 'true'
   slack-notification:
     name: Notification
@@ -277,7 +231,6 @@ jobs:
       GITHUB_USER: dotcmsbuild
       GITHUB_USER_TOKEN: ${{ secrets.USER_TOKEN }}
       PULL_REQUEST: ${{ github.event.number }}
-      DEBUG: false
     if: success() || failure()
     needs: [run-unit-tests-job, run-curl-tests-job, run-integration-tests-job]
     steps:
@@ -300,4 +253,3 @@ jobs:
         with:
           github-user: ${{ github.actor }}
           branch: ${{ env.CURRENT_BRANCH }}
-
