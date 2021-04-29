@@ -60,6 +60,7 @@ jobs:
     runs-on: ubuntu-18.04
     env:
       DOT_CICD_BRANCH: 20088-automated-vulnerability-scan
+      DOCKER_BRANCH: release-21.05
       DOTCMS_DOCKER_TAG: 21.05-prerelease
       EXPORT_REPORTS: true
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
