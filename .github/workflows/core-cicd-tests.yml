@@ -60,7 +60,7 @@ jobs:
     runs-on: ubuntu-18.04
     env:
       DOT_CICD_BRANCH: 20088-automated-vulnerability-scan
-      DOCKER_BRANCH: release-21.05
+      DOCKER_BRANCH: export-stuff-from-dotcms-image
       EXPORT_REPORTS: true
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       GITHUB_USER: dotcmsbuild
