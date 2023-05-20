@@ -32,6 +32,7 @@ import com.dotcms.cube.CubeJSClient;
 import com.dotcms.cube.CubeJSQuery;
 import com.dotcms.cube.CubeJSResultSet;
 import com.dotcms.cube.CubeJSResultSet.ResultSetItem;
+import com.dotcms.cube.CubeJSResultSetImpl;
 import com.dotcms.enterprise.rules.RulesAPI;
 import com.dotcms.experiments.business.result.BrowserSession;
 import com.dotcms.experiments.business.result.Event;
@@ -489,7 +490,8 @@ public class ExperimentsAPIImpl implements ExperimentsAPI {
             final Experiment runningExperiment = runningExperimentsOnPage.get(0);
             DotPreconditions.isTrue(runningExperiment.scheduling().orElseThrow().endDate()
                     .orElseThrow().isBefore(persistedExperiment.scheduling().orElseThrow().startDate().orElseThrow()),
-                    ()-> "Start date of the Experiment is before the end date of the running Experiment. Name: "
+                    ()-> "Scheduling conflict: The same page can't be included in different experiments with overlapping schedules. "
+                            + "Overlapping with Experiment: "
                             + runningExperiment.name(),
                     DotStateException.class);
         }
@@ -535,7 +537,8 @@ public class ExperimentsAPIImpl implements ExperimentsAPI {
                     schedulingToCheck.endDate().orElseThrow().isBefore(scheduling.startDate().orElseThrow());
         });
 
-        DotPreconditions.isTrue(noConflicts, ()-> "There is a scheduling conflict between the Experiment and the scheduled Experiment. Name: "
+        DotPreconditions.isTrue(noConflicts, ()-> "Scheduling conflict: The same page can't be included in different experiments with overlapping schedules. "
+                        + "Overlapping with Experiment: "
                 + scheduledExperimentsOnPage.get(0).name(),
                 DotStateException.class);
     }
@@ -940,7 +943,7 @@ public class ExperimentsAPIImpl implements ExperimentsAPI {
             final CubeJSQuery cubeJSQuery = ExperimentResultsQueryFactory.INSTANCE
                     .create(experiment);
 
-            final CubeJSResultSet cubeJSResultSet = cubeClient.send(cubeJSQuery);
+            final CubeJSResultSet cubeJSResultSet = cubeClient.sendWithPagination(cubeJSQuery);
 
             String previousLookBackWindow = null;
             final List<Event> currentEvents = new ArrayList<>();
@@ -1136,6 +1139,11 @@ public class ExperimentsAPIImpl implements ExperimentsAPI {
 
             DotPreconditions.checkState(scheduling.endDate().get().isAfter(scheduling.startDate().get()),
                     "Invalid Scheduling. End date must be after the start date");
+
+            DotPreconditions.checkState(Duration.between(scheduling.startDate().get(),
+                            scheduling.endDate().get()).toDays() >= EXPERIMENTS_MIN_DURATION.get(),
+                    "Experiment duration must be at least "
+                            + EXPERIMENTS_MIN_DURATION.get() +" days. ");
 
             DotPreconditions.checkState(Duration.between(scheduling.startDate().get(),
                             scheduling.endDate().get()).toDays() <= EXPERIMENTS_MAX_DURATION.get(),
