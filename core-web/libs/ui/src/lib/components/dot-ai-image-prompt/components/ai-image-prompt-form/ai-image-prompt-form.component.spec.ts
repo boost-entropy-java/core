@@ -6,17 +6,13 @@ import { ReactiveFormsModule } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
 
 import { DotMessageService } from '@dotcms/data-access';
-import { DotMessagePipe } from '@dotcms/ui';
+import { DotAIImageOrientation, DotGeneratedAIImage, PromptType } from '@dotcms/dotcms-models';
 
+import { DotCopyButtonComponent } from './../../../../components/dot-copy-button/dot-copy-button.component';
+import { DotMessagePipe } from './../../../../dot-message/dot-message.pipe';
 import { AiImagePromptFormComponent } from './ai-image-prompt-form.component';
 
-import {
-    DotAIImageOrientation,
-    DotGeneratedAIImage
-} from '../../../../shared/services/dot-ai/dot-ai.models';
-import { PromptType } from '../../ai-image-prompt.models';
-
-describe('AiImagePromptFormComponent', () => {
+describe('DotAiImagePromptFormComponent', () => {
     let spectator: Spectator<AiImagePromptFormComponent>;
     let generateButton;
     const formValue = {
@@ -45,7 +41,7 @@ describe('AiImagePromptFormComponent', () => {
     });
 
     it('should emit value when form value change', () => {
-        const emitSpy = jest.spyOn(spectator.component.valueChange, 'emit');
+        const emitSpy = spyOn(spectator.component.valueChange, 'emit');
         spectator.component.form.setValue(formValue);
 
         spectator.detectChanges();
@@ -100,7 +96,7 @@ describe('AiImagePromptFormComponent', () => {
     });
 
     it('should emit generate when the form is submitted', () => {
-        const valueSpy = jest.spyOn(spectator.component.generate, 'emit');
+        const valueSpy = spyOn(spectator.component.generate, 'emit');
         spectator.setInput({ isLoading: false });
         spectator.component.form.setValue(formValue);
         spectator.detectChanges();
@@ -128,14 +124,6 @@ describe('AiImagePromptFormComponent', () => {
     });
 
     it('should copy to clipboard the ai rewritten text', () => {
-        const writeText = jest.fn();
-
-        Object.assign(navigator, {
-            clipboard: {
-                writeText
-            }
-        });
-
         const newGeneratedValue = {
             request: formValue,
             response: { revised_prompt: 'New Prompt' }
@@ -146,8 +134,10 @@ describe('AiImagePromptFormComponent', () => {
 
         const icon = spectator.query(byTestId('copy-to-clipboard'));
 
+        const btnCopy = spectator.query(DotCopyButtonComponent);
+        const spyCopy = spyOn(btnCopy, 'copyUrlToClipboard');
         spectator.click(icon);
 
-        expect(navigator.clipboard.writeText).toHaveBeenCalledWith('New Prompt');
+        expect(spyCopy).toHaveBeenCalled();
     });
 });
